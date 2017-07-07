@@ -7,7 +7,7 @@ uri_base = 'http://api.wunderground.com/api'
 class API(object):
     """Wrapper for the wunderground.com weather API."""
 
-    def __init__(self, api_key, resp_format="json", cache=None):
+    def __init__(self, api_key, resp_format="json", lang="EN", cache=None):
         """Construct new API object.
 
         :param api_key: API key.
@@ -19,6 +19,7 @@ class API(object):
             self.resp_format = resp_format
         else:
             raise ValueError("API response format must be 'json' or 'xml'")
+        self.lang = lang
         self.cache = cache
         self.features = [
             "alerts",
@@ -55,14 +56,15 @@ class API(object):
     def _build_uri_base(self, features):
         """Build the request URI base.
 
-        Build the base of the request URI. This includes the API key and the
-        feature string.
+        Build the base of the request URI. This includes the API key, feature
+        string, and settings string.
 
         :param features: List of API features.
         """
         feature_str = "/".join(features)
+        settings_str = "lang:{}".format(self.lang)
 
-        return "{}/{}/{}".format(uri_base, self.api_key, feature_str)
+        return "/".join([uri_base, self.api_key, feature_str, settings_str])
 
     def _build_uri(self, features, query):
         """Build the request URI.

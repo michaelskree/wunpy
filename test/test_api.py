@@ -9,7 +9,7 @@ class APITest(TestCase):
 
     @responses.activate
     def test_error(self):
-        uri = "http://api.wunderground.com/api/key/conditions/q/12345.json"
+        uri = "http://api.wunderground.com/api/key/conditions/lang:EN/q/12345.json"
         resp = {
             "response": {
                 "error": {
@@ -23,7 +23,7 @@ class APITest(TestCase):
             wapi.conditions(12345)
         self.assertEqual(str(cm.exception), "Unknown location")
 
-        uri = "http://api.wunderground.com/api/key/conditions/q/12345.xml"
+        uri = "http://api.wunderground.com/api/key/conditions/lang:EN/q/12345.xml"
         resp = "<response><error><description>Unknown location</description></error></response>"
         responses.add(responses.GET, uri, body=resp)
         wapi = api.API("key", resp_format="xml")
@@ -33,7 +33,7 @@ class APITest(TestCase):
 
     @responses.activate
     def test_feature(self):
-        uri = "http://api.wunderground.com/api/key/conditions/q/12345.json"
+        uri = "http://api.wunderground.com/api/key/conditions/lang:EN/q/12345.json"
         resp = {
             "response": {},
             "current_observation": {
@@ -45,7 +45,7 @@ class APITest(TestCase):
         results = wapi.conditions(12345)
         self.assertEqual(results, resp)
 
-        uri = "http://api.wunderground.com/api/key/conditions/q/12345.xml"
+        uri = "http://api.wunderground.com/api/key/conditions/lang:EN/q/12345.xml"
         resp = "<response><current_observation><element>Value</element></current_observation></response>"
         responses.add(responses.GET, uri, body=resp)
         wapi = api.API("key", resp_format="xml")
@@ -55,7 +55,7 @@ class APITest(TestCase):
 
     @responses.activate
     def test_multi_feature(self):
-        uri = "http://api.wunderground.com/api/key/conditions/forecast/q/12345.json"
+        uri = "http://api.wunderground.com/api/key/conditions/forecast/lang:EN/q/12345.json"
         resp = {
             "response": {},
             "current_observation": {
@@ -72,7 +72,7 @@ class APITest(TestCase):
 
     @responses.activate
     def test_current_hurricane(self):
-        uri = "http://api.wunderground.com/api/key/currenthurricane/view.json"
+        uri = "http://api.wunderground.com/api/key/currenthurricane/lang:EN/view.json"
         resp = {
             "response": {},
             "currenthurricane": {
@@ -86,7 +86,7 @@ class APITest(TestCase):
 
     @responses.activate
     def test_history(self):
-        uri = "http://api.wunderground.com/api/key/history_20170101/q/12345.json"
+        uri = "http://api.wunderground.com/api/key/history_20170101/lang:EN/q/12345.json"
         resp = {
             "response": {},
             "history_20170101": {
@@ -107,7 +107,7 @@ class APITest(TestCase):
 
     @responses.activate
     def test_get_uncached(self):
-        uri = "http://api.wunderground.com/api/key/conditions/q/12345.json"
+        uri = "http://api.wunderground.com/api/key/conditions/lang:EN/q/12345.json"
         resp = {
             "response": {},
             "current_observation": {
@@ -131,3 +131,16 @@ class APITest(TestCase):
     def test_invalid_response_format(self):
         with self.assertRaises(ValueError):
             api.API("key", resp_format="invalid")
+
+    @responses.activate
+    def test_lang(self):
+        uri = "http://api.wunderground.com/api/key/conditions/lang:FR/q/12345.json"
+        wapi = api.API("key", lang="FR")
+        resp = {
+            "response": {},
+            "current_observation": {
+                "key": "value",
+            },
+        }
+        responses.add(responses.GET, uri, json=resp)
+        self.assertEqual(wapi.conditions(12345), resp)
