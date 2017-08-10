@@ -53,31 +53,25 @@ class API(object):
             return get_feature
         raise AttributeError()
 
-    def _build_uri_base(self, features):
-        """Build the request URI base.
-
-        Build the base of the request URI. This includes the API key, feature
-        string, and settings string.
-
-        :param features: List of API features.
-        """
-        feature_str = "/".join(features)
-        settings_str = "lang:{}".format(self.lang)
-
-        return "/".join([uri_base, self.api_key, feature_str, settings_str])
-
-    def _build_uri(self, features, query):
+    def _build_uri(self, features, tail, settings=None):
         """Build the request URI.
 
         Build the full request URI. This includes the API key, feature string,
         and query string.
 
         :param features: List of API features.
-        :param query: The query string to use.
+        :param tail: Final URI component. Typically a query string.
+        :param settings: Query settings.
         """
-        base = self._build_uri_base(features)
+        if settings is None:
+            settings = {}
 
-        return "{}/q/{}.{}".format(base, query, self.resp_format)
+        settings = {"lang": self.lang, **settings}
+        s = "/".join("{}:{}".format(k, settings[k]) for k in sorted(settings))
+
+        components = [uri_base, self.api_key, *features, s, tail]
+
+        return "/".join(components) + ".{}".format(self.resp_format)
 
     def _request(self, uri):
         """Issue a request to the API.
@@ -105,7 +99,7 @@ class API(object):
 
         return data
 
-    def _get_api_data(self, uri, use_cache=True):
+    def _get(self, uri, use_cache=True):
         """Get API data.
 
         Get data from cache or issue a request to the API.
@@ -126,16 +120,18 @@ class API(object):
 
         return results
 
-    def get(self, features, query, use_cache=True):
+    def get(self, features, query, settings=None, use_cache=True):
         """Get multiple API features for a specific query string.
 
         :param features: List of API features to get.
         :param query: The query string to use.
+        :param settings: Query settings.
         :param use_cache: Whether or not to use the API cache.
         """
-        uri = self._build_uri(features, query)
+        tail = "q/{}".format(str(query))
+        uri = self._build_uri(features, tail, settings)
 
-        return self._get_api_data(uri, use_cache=use_cache)
+        return self._get(uri, use_cache=use_cache)
 
     def current_hurricane(self, use_cache=True):
         """Get current hurricane information.
@@ -145,10 +141,9 @@ class API(object):
 
         :param use_cache: Whether or not to use the API cache.
         """
-        base = self._build_uri_base(["currenthurricane"])
-        uri = "{}/view.{}".format(base, self.resp_format)
+        uri = self._build_uri(["currenthurricane"], "view")
 
-        return self._get_api_data(uri, use_cache=use_cache)
+        return self._get(uri, use_cache=use_cache)
 
     def history(self, query, history_date, use_cache=True):
         """Get historical weather data.
@@ -162,6 +157,22 @@ class API(object):
         feature = "history_{}".format(history_date.strftime("%Y%m%d"))
 
         return self.get([feature], query, use_cache=use_cache)
+
+    def conditions(self, query, use_pws=True, use_cache=True):
+        """Get current conditions.
+
+        :param query: The query string to use.
+        :param use_pws: Whether or not to use personal weather stations.
+        :param use_cache: Whether or not to use the API cache.
+        """
+        settings = {"pws": int(use_pws)}
+
+        return self.get(
+            ["conditions"],
+            query,
+            settings=settings,
+            use_cache=use_cache
+        )
 
 
 class APIError(Exception):

@@ -9,7 +9,7 @@ class APITest(TestCase):
 
     @responses.activate
     def test_error(self):
-        uri = "http://api.wunderground.com/api/key/conditions/lang:EN/q/12345.json"
+        uri = "http://api.wunderground.com/api/key/alerts/lang:EN/q/12345.json"
         resp = {
             "response": {
                 "error": {
@@ -20,54 +20,50 @@ class APITest(TestCase):
         responses.add(responses.GET, uri, json=resp)
         wapi = api.API("key")
         with self.assertRaises(api.APIError) as cm:
-            wapi.conditions(12345)
+            wapi.alerts(12345)
         self.assertEqual(str(cm.exception), "Unknown location")
 
-        uri = "http://api.wunderground.com/api/key/conditions/lang:EN/q/12345.xml"
+        uri = "http://api.wunderground.com/api/key/alerts/lang:EN/q/12345.xml"
         resp = "<response><error><description>Unknown location</description></error></response>"
         responses.add(responses.GET, uri, body=resp)
         wapi = api.API("key", resp_format="xml")
         with self.assertRaises(api.APIError) as cm:
-            wapi.conditions(12345)
+            wapi.alerts(12345)
         self.assertEqual(str(cm.exception), "Unknown location")
 
     @responses.activate
     def test_feature(self):
-        uri = "http://api.wunderground.com/api/key/conditions/lang:EN/q/12345.json"
+        uri = "http://api.wunderground.com/api/key/alerts/lang:EN/q/12345.json"
         resp = {
             "response": {},
-            "current_observation": {
-                "key": "value",
-            },
+            "alerts": [],
         }
         responses.add(responses.GET, uri, json=resp)
         wapi = api.API("key")
-        results = wapi.conditions(12345)
+        results = wapi.alerts(12345)
         self.assertEqual(results, resp)
 
-        uri = "http://api.wunderground.com/api/key/conditions/lang:EN/q/12345.xml"
-        resp = "<response><current_observation><element>Value</element></current_observation></response>"
+        uri = "http://api.wunderground.com/api/key/alerts/lang:EN/q/12345.xml"
+        resp = "<response><alerts /></response>"
         responses.add(responses.GET, uri, body=resp)
         wapi = api.API("key", resp_format="xml")
-        results = wapi.conditions(12345)
+        results = wapi.alerts(12345)
         text = str(ElementTree.tostring(results), "utf-8")
         self.assertEqual(text, resp)
 
     @responses.activate
     def test_multi_feature(self):
-        uri = "http://api.wunderground.com/api/key/conditions/forecast/lang:EN/q/12345.json"
+        uri = "http://api.wunderground.com/api/key/alerts/forecast/lang:EN/q/12345.json"
         resp = {
             "response": {},
-            "current_observation": {
-                "key": "value",
-            },
+            "alerts": [],
             "forecast": {
                 "key": "value",
             },
         }
         responses.add(responses.GET, uri, json=resp)
         wapi = api.API("key")
-        results = wapi.get(["conditions", "forecast"], 12345)
+        results = wapi.get(["alerts", "forecast"], 12345)
         self.assertEqual(results, resp)
 
     @responses.activate
@@ -102,24 +98,22 @@ class APITest(TestCase):
         c = cache.Cache()
         c.get = mock.Mock(return_value={"key": "value"})
         wapi = api.API("key", cache=c)
-        results = wapi.conditions(12345)
+        results = wapi.alerts(12345)
         self.assertEqual(results["key"], "value")
 
     @responses.activate
     def test_get_uncached(self):
-        uri = "http://api.wunderground.com/api/key/conditions/lang:EN/q/12345.json"
+        uri = "http://api.wunderground.com/api/key/alerts/lang:EN/q/12345.json"
         resp = {
             "response": {},
-            "current_observation": {
-                "key": "value",
-            },
+            "alerts": [],
         }
         responses.add(responses.GET, uri, json=resp)
         c = cache.Cache()
         c.get = mock.Mock(return_value=None)
         c.set = mock.Mock()
         wapi = api.API("key", cache=c)
-        results = wapi.conditions(12345)
+        results = wapi.alerts(12345)
         self.assertEqual(results, resp)
         c.set.assert_called_with(uri, resp)
 
@@ -134,13 +128,34 @@ class APITest(TestCase):
 
     @responses.activate
     def test_lang(self):
-        uri = "http://api.wunderground.com/api/key/conditions/lang:FR/q/12345.json"
+        uri = "http://api.wunderground.com/api/key/alerts/lang:FR/q/12345.json"
         wapi = api.API("key", lang="FR")
         resp = {
             "response": {},
-            "current_observation": {
+            "alerts": [],
+        }
+        responses.add(responses.GET, uri, json=resp)
+        self.assertEqual(wapi.alerts(12345), resp)
+
+    @responses.activate
+    def test_conditions(self):
+        uri = "http://api.wunderground.com/api/key/conditions/lang:EN/pws:1/q/12345.json"
+        wapi = api.API("key")
+        resp = {
+            "response": {},
+            "conditions": {
                 "key": "value",
             },
         }
         responses.add(responses.GET, uri, json=resp)
         self.assertEqual(wapi.conditions(12345), resp)
+        uri = "http://api.wunderground.com/api/key/conditions/lang:EN/pws:0/q/12345.json"
+        wapi = api.API("key")
+        resp = {
+            "response": {},
+            "conditions": {
+                "key": "value",
+            },
+        }
+        responses.add(responses.GET, uri, json=resp)
+        self.assertEqual(wapi.conditions(12345, use_pws=False), resp)
