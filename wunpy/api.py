@@ -27,7 +27,7 @@ class API(object):
             "astronomy",
             "geolookup",
             "hourly",
-            "hourly_10_day",
+            "hourly10day",
             "planner",
             "rawtide",
             "satellite",
