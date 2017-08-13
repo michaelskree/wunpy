@@ -159,3 +159,35 @@ class APITest(TestCase):
         }
         responses.add(responses.GET, uri, json=resp)
         self.assertEqual(wapi.conditions(12345, use_pws=False), resp)
+
+    @responses.activate
+    def test_forecast(self):
+        uri = "http://api.wunderground.com/api/key/forecast/bestfct:1/lang:EN/q/12345.json"
+        wapi = api.API("key")
+        resp = {
+            "response": {},
+            "conditions": {
+                "key": "value",
+            },
+        }
+        responses.add(responses.GET, uri, json=resp)
+        self.assertEqual(wapi.forecast(12345), resp)
+        uri = "http://api.wunderground.com/api/key/forecast/bestfct:0/lang:EN/q/12345.json"
+        responses.add(responses.GET, uri, json=resp)
+        self.assertEqual(wapi.forecast(12345, use_bestfct=False), resp)
+
+    @responses.activate
+    def test_forecast10day(self):
+        uri = "http://api.wunderground.com/api/key/forecast10day/bestfct:1/lang:EN/q/12345.json"
+        wapi = api.API("key")
+        resp = {
+            "response": {},
+            "conditions": {
+                "key": "value",
+            },
+        }
+        responses.add(responses.GET, uri, json=resp)
+        self.assertEqual(wapi.forecast10day(12345), resp)
+        uri = "http://api.wunderground.com/api/key/forecast10day/bestfct:0/lang:EN/q/12345.json"
+        responses.add(responses.GET, uri, json=resp)
+        self.assertEqual(wapi.forecast10day(12345, use_bestfct=False), resp)

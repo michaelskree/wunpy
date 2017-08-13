@@ -25,9 +25,6 @@ class API(object):
             "alerts",
             "almanac",
             "astronomy",
-            "conditions",
-            "forecast",
-            "forecast_10_day",
             "geolookup",
             "hourly",
             "hourly_10_day",
@@ -169,6 +166,40 @@ class API(object):
 
         return self.get(
             ["conditions"],
+            query,
+            settings=settings,
+            use_cache=use_cache
+        )
+
+    def forecast(self, query, use_bestfct=True, use_cache=True):
+        """Get weather forecast.
+
+        :param query: The query string to use.
+        :param use_bestfct: Whether or not to use Weather Underground Best
+                            Forecast.
+        :param use_cache: Whether or not to use the API cache.
+        """
+        settings = {"bestfct": int(use_bestfct)}
+
+        return self.get(
+            ["forecast"],
+            query,
+            settings=settings,
+            use_cache=use_cache
+        )
+
+    def forecast10day(self, query, use_bestfct=True, use_cache=True):
+        """Get weather forecast for the next 10 days.
+
+        :param query: The query string to use.
+        :param use_bestfct: Whether or not to use Weather Underground Best
+                            Forecast.
+        :param use_cache: Whether or not to use the API cache.
+        """
+        settings = {"bestfct": int(use_bestfct)}
+
+        return self.get(
+            ["forecast10day"],
             query,
             settings=settings,
             use_cache=use_cache
